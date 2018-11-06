@@ -1,0 +1,185 @@
+\section{Formalize Problem}\label{sec:formalize}
+%
+In this section, we give a formal definition of the semantic equivalence of SQL queries.
+
+%
+We first define the syntax of the target SQL query as the following:
+%
+\input{fig/SQL}
+%
+That is an sql query $Q$ can be a table operation, a filter operation, a project operation, a join operation, an union operation or an 
+aggregate operation.
+%
+We choose this definition of SQL syntax is based on
+\textbf{(1)} majority SQL can be converted into this form, and
+\textbf{(2)} \sys is implemented on widely used open source framework calcite has similar internal representation for SQL query.
+%
+
+%
+In order to define the semantic of these SQL queries, we need to define \textbf{relation}, which is its output and its input.
+%
+An relation $R$ is a bag of (multi-value set) of vectors.
+%
+Multi-value set means it allows the same vector appears multiple times.
+%
+An input $T$ for an SQL query $q_0$ is a set of tables and each table contains finite number of tuples.
+%
+An input $T$ is an valid input for $q_0$, if and only if it contains all tables that $q_0$ used.
+
+We define the semantic of an SQL query in terms of its output relation on the valid input $T$.
+\begin{gather*}
+  \inference[$\textsc{E-Table}$]{%
+  }{%
+  \evaluation{T}{\STable{N}}{( t | \forall t \in N)}
+  }
+\end{gather*}
+%
+A table operation returns a relation that each vector corresponding a tuple in the table $N$.
+%
+\begin{gather*}
+  \inference[$\textsc{E-Filter}$]{%
+  \evaluation{T}{q_0}{R}
+  }{%
+    \evaluation{T}{\SFilter{P}{q_0}}{(v| \forall \vec{v} \in R,P(\vec{v}))}
+  }
+\end{gather*}
+%
+Given a filter operation $\SFilter{P}{q_0}$, if executing SQL query $q_0$ on valid input $T$ returns an relation $R_0$, the filter operation
+returns a relations contains all vectors in $R_0$ that satisfy the predicate $P$.
+%
+\begin{gather*}
+  \inference[$\textsc{E-Projection}$]{%
+    \evaluation{T}{q_0}{R}
+  }{%
+    \evaluation{T}{\SProj{F}{q_0}}{( F(\vec{v}) | \forall \vec{v} \in R)}
+  }
+\end{gather*}
+%
+Given a project operation $\SProj{F}{q_0}$, if $q_0$ returns relation $R_0$ on $T$, it returns a relation by applying transformation function 
+$F$ on all vectors in $R_0$.
+%
+An transformation function is the function that takes an vector as input, and outputs a vector.
+%
+In the system we support, the transformation function can apply variety operator on the elements of vectors, 
+including arithmetic operation, \textbf{CASE} operator, inserting constant value includes \textbf{NULL}, deleting elements on certain indexes, adding 
+element on certain indexes ,and user define functions. 
+%
+\begin{gather*}
+  \inference[$\textsc{E-InnerJoin}$]{%
+    \evaluation{T}{q_0}{R_0}\\
+    \evaluation{T}{q_1}{R_1}\\
+  }{%
+    \evaluation{T}{\SJoin{Inner}{P}{q_0}{q_1}}{R_3}
+  }
+  \\
+  R_3 :=(concat(\vec{v_0},\vec{v_1}) | \forall \vec{v_0} \in R_0, \forall \vec{v_1} \in R_1, P(\vec{v_0},\vec{v_1}))
+  \\
+  \inference[$\textsc{E-LeftJoin}$]{
+   \evaluation{T}{q_0}{R_0}\\
+   \evaluation{T}{q_1}{R_1}\\
+  }
+  {
+   \evaluation{T}{\SJoin{Left}{P}{q_0}{q_1}}{R_3 \cup R_4}
+  }
+  \\
+  R_4 :=(concat(\vec{v_0},\vec{null}) | \forall \vec{v_0} \in R_0 s.t. \forall \vec{v_1} \in R_1, \neg P(\vec{v_0},\vec{v_1}))
+  \\
+ \inference[$\textsc{E-FullJoin}$]{
+   \evaluation{T}{q_0}{R_0}\\
+   \evaluation{T}{q_1}{R_1}\\
+  }
+  {
+   \evaluation{T}{\SJoin{Full}{P}{q_0}{q_1}}{R_3 \cup R_4 \cup R_5}
+  }
+  \\
+  R_5 :=(concat(\vec{null},\vec{v_1}) | \forall \vec{v_1} \in R_1 s.t \forall \vec{v_0} \in R_0, P(\vec{v_0},\vec{v_1}))
+\end{gather*}
+%
+Given a join operation $\SJoin{JoinType}{P}{q_0}{q_1}$ that $q_0$ returns $R_0$ and $q_1$ returns $R_1$, the semantic definition is based on the $JoinType$.
+%
+If it is a $Inner$ join, then it returns a relation $R_3$.
+%
+For all vector $\vec{v_0}$ in $R_0$, and all vector $\vec{v_1}$ in $R_1$, if $\vec{v_0}$ and
+$\vec{v_1}$ are satisfied the predicate $P$, then the concatenation of $\vec{v_0}$ and $\vec{v_1}$ is in relation $R_3$.
+%
+If it is a $Left$ join, then it returns a relation which is union of $R_3$ and $R_4$.
+%
+$R_3$ has the same definition as the above.
+%
+$R_4$ contains all vector $\vec{v_0}$ in $R_0$, which cannot find a vector $\vec{v_1}$ in $R_1$ that satisfy predicate $P$, concat with a vector that has 
+the length of $\vec{v_1}$ and each element is $null$.
+%
+For full outer join, it returns a union of $R_3$, $R_4$ and $R_5$.
+%
+$R_3$ and $R_4$ has the same definition as the above.
+%
+$R_5$ is defined symmetrically in terms of $R_4$.
+%
+For any type of join operation, the predicate $P$ is always a conjunction of equalities, that each equality has the form that left side is an index in 
+$\vec{v_0}$ and right side is an index in $\vec{v_1}$.
+%
+\begin{gather*} 
+  \inference[$\textsc{E-Union}$]{%
+   \evaluation{T}{q_0}{R_0}\\
+   \evaluation{T}{q_1}{R_1}\\
+  }{%
+  \evaluation{T}{\SUnion{q_0}{q_1}}{R_0 \cup R_1}
+  }
+\end{gather*}
+%
+Given a union operation $\SUnion{q_0}{q_1}$ that $q_0$ returns $R_0$ and $q_1$ returns $R_1$, it returns a relations that contains all vectors in $R_0$ and 
+$R_1$.
+%
+Union operation requires $R_0$ and $R_1$ contains same length of vectors, and each corresponding element has the same type.
+%
+Union operation does \textbf{not} delete any duplicate vectors.
+%
+That is saying that union operation is always has the \textbf{ALL} keyword.
+\begin{gather*}
+  \inference[$\textsc{E-Aggregate}$]{%
+   \evaluation{T}{q_0}{R_0}\\
+  }{%
+  \evaluation{T}{\SAggregate{Agg}{\vec{group}}{q_0}}{R_3}
+  }
+  \\
+  R_3 := (Agg(\vec{g}) | \forall g \in partition(R_0,\vec{group}))
+\end{gather*}
+%
+Given an aggregate operation $\SAggregate{Agg}{\vec{group}}{q_0}$, that $q_0$ returns $R_0$ on $T$, it returns a relation by applying 
+aggregate function $Agg$ on each elements of the partition set $partition(R_0,\vec{group})$.
+%
+An aggregate function takes a set of vectors as the input, and output a vector.
+%
+In the system, we support common used aggregator in the aggregate function such as $MAX$, $MIN$, $COUNT$, $SUM$.
+%
+We also support use self-defined aggregator.
+%
+The element of the partition set $partition(R_0,\vec{group})$ is a set of vectors, that each set contains all vectors in $R_0$ that has the same 
+elements of all indexes in $\vec{group}$.
+
+
+%
+In order to define \textbf{equivalent}, we need to first define \textbf{containment}.
+%
+\begin{mydef}
+Given two SQL query $q_0$ and $q_1$, $q_0$ \textbf{contains} $q_1$, denote as $q_1 \subseteq q_0$, if and only if, 
+for all all valid inputs $T$ for $q_0$ and $q_1$, 
+such that relation $R_0$ is the executing result of $q_0$, and relation $R_1$ is the executing result of $q_1$ that respect $T$, then 
+for all vectors $\vec{v}$ in $R_1$, $\vec{v}$ shows in $R_0$ at least one time. 
+\end{mydef}
+%
+The definition of containment treats an relation as a set rather than a bag.
+%
+It means that for an vectors shows three times in the relation $R_1$, and only one times in the relation $R_0$, $R_0$ still contains $R_1$ based on the
+definition.
+% should we explain why it is good definition here?
+\begin{mydef}
+Given two SQL query $q_0$ and $q_1$, $q_0$ is \textbf{equivalent} to $q_1$, denote as $q_0 \equiv q_1$, if and only if 
+$q_0 \subseteq q_1$ and $q_1 \subseteq q_0$.
+\end{mydef}
+Two queries are semantic equivalent if and only if they contains each other.
+%
+Because semantic equivalent use the definition of containment, semantic equivalent also treats an relation as a bag rather than a set.
+%
+In the rest of paper, we explain how to automatically verify two queries are equivalent by verifying two times containments relations under treating 
+relations as sets

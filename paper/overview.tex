@@ -1,0 +1,155 @@
+
+
+\section{Overview}\label{sec:overview}
+%
+In this section, we demonstrate our approach by example.
+%
+We first introduce a pair of SQL queries, its corresponding normalized representation and the table schema.
+%
+Then we illustrate how to prove their semantic equivalent by our system.
+%
+Finally, we introduce a key technique SMT solver that our system is based.
+
+%
+\begin{figure}
+\input{code/q1.sql}
+\caption{%
+    A pair of sql query from calcite.
+  }\label{fig:q1}
+\end{figure}
+%
+
+\autoref{fig:q1} contains a pair of SQL queries, its corresponding normalized representation and the table schema.
+%
+$EMP$ is a table that has three columns $EMPNO$, $ENAME$ and $DEPTNO$.
+%
+$EMPNO$ and $DEPTNO$ are integer type, and $ENAME$ is string type.
+%
+The query $q_0$ first select all tuples from table $EMP$ that $DEPTNO$ is equal to
+10 and name the result as $t$.
+%
+Then $q_0$ select all tuples from $t$ such that $DEPTNO$ plus five is larger than $EMPNO$.
+%
+The query $q_1$ first select all tuples from table $EMP$ that $DEPTNO$ is equal to
+ten and name the result as $t1$.
+%
+Then $q_1$ select all tuples from $t1$ such that $EMPNO$ is less than 15.
+%
+These two sql queries are obviously semantic equivalent 
+because once the $DEPTNO$ is equal to ten, $DEPTNO$ plus five is equal to 15.
+%
+In order to prove the semantic equivalence of $q_0$ and $q_1$, we convert $q_0$ and 
+$q_1$ into the syntax we defined in \autoref{sec:formalize}.
+%
+The relation, that returns by executing $q_0$ on a valid input $T$, is denoted as $R_0$.
+%
+The relation that returns by executing $q_1$ is denoted as $R_1$.
+%
+In this example, because the only related table is $EMP$, the valid input $T$ is the table $EMP$ with
+finite number of tuples.
+
+%
+Based on the definition of equivalent in \autoref{sec:formalize}, in order to prove $q_0$ is semantically
+equivalent to $q_1$, we need to prove $q_0$ contains $q_1$ and $q_1$ contains $q_0$.
+%
+We use $q_0$ contains $q_1$ as an example to demonstrate how to verify containment of sql queries.
+%
+Based on the definition of containment in \autoref{sec:formalize}, in order to prove $q_0$ contains 
+$q_1$, we need to prove for all valid input $T$, all vectors, that are $R_1$, are also in $R_0$. 
+%
+In other words, we need to prove for all valid input, there is no vector that in $R_1$ is not in $R_0$.
+%
+
+% the intuition of the design
+If we consider all vectors in $R_0$ and $R_1$, each of them is actually directly from a tuple in the input table $EMP$
+because of the semantic of filter operation.
+%
+Furthermore, if we only consider sql query that contains table, filter, project and inner join operation, 
+then each vector in the final relation is constructed by choosing one tuple
+from each table if query does not contain duplicate table.
+%
+An query that contains duplicate table will be talked at \QZ{section}.
+%
+Thus this type of query can be viewed as an multiple execution of a program that takes one vector
+from each table that either constructs a new vector in the final relation, or does not return any vector.
+%
+In this example, $q_0$ and $q_1$ can be viewed as multiple execution of the program $p_0$ and $p_1$ that shows in \autoref{fig:q2}
+%
+\begin{figure}
+\input{code/q2.java}
+\caption{%
+    programs that construct vector.
+  }\label{fig:q2}
+\end{figure}
+%
+$p_0$ and $p_1$ takes an vector from the input table $EMP$ and output an vector if it satisfied certain conditions.
+%
+If we can prove the following statement for any given input, which is a vector of table $EMP$, then we prove $q_0$ contains $q_1$.
+%
+The statement is for the same input, if program $p_1$ returns a vector, then program $p_0$ returns the same vector.
+%
+Proving such statement needs two steps.
+%
+First we need to prove for an arbitrary input vector $EMPNO,ENAME,DEPTNO$, if $p_1$ reaches the return statement, which means this vector is not be
+eliminated by the filter operation of $q_1$, then $p_0$ also reaches the return statement.
+%
+Then we need to prove for an arbitrary input vector that $p_1$ and $p_0$ both reaches the return statement, $p_1$ and $p_0$ returns the same vector.
+%
+This statement holds trivially for this example, because both sql queries directly return the input vector.
+%
+But for queries that contain project operation, we need to verify the output vectors are the same by two queries.
+
+%how to do it.
+The key here is the program $p_0$ and $p_1$ are loop-free and guaranteed terminated.
+%
+Verifying property for loop-free and guaranteed terminated programs is a well-studied problem in program language community.
+%
+Using satisfiability modulo theories(SMT) solver is a widely accepted technique in program verification problem.
+%
+We translate queries into logic constrains, and use SMT solver to decide if these constrains are satisfiable to judge if one query contains
+the other.
+
+%
+In this example, because the input is a vector of three elements, we create three variables $SEMPNO$,$SENAME$ and $SDEPTNO$ in the logic constrains that each 
+corresponding an element in the input vector.
+%
+The condition of program $p_0$ reaches the return statement can be encoded into an first order logic constrains \\
+$c_0 := SDEPTNO = 10 \land SDEPTNO + 5 > SEMPNO$.
+%
+And the logic constrains for program $p_1$ reaches the return statement is $c_1 := SDEPTNO = 10 \land 15 > SEMPNO$.
+%
+For verifying $p_1$ reaches the return statement implies $p_0$ reaches the return statement, 
+we need to verify for any input that satisfy $c_1$ would satisfy $c_0$.
+%
+In other words, we need to prove that there is no input that satisfies $c_1$ and does not satisfy $c_0$.
+%
+So we feed the logical constrains $c_1 \land \neg c_0$ in the SMT solver. 
+%
+The SMT solver returns \textbf{unsat}, which means this logical constrains is unsatisfiable.
+%
+It indicates there is no such input that satisfies $c_1$ and does not satisfy $c_0$.
+
+%
+In the second step, we need to prove for the same input, if both program $p_0$ and $p_1$ reach the return statement, then they return the same vector.
+%
+In the other words, we need to prove there is no input, such that for $p_0$ and $p_1$ returns different vector.
+%
+Because $p_0$ and $p_1$ both directly returns the input vector, this statement holds trivially.
+%
+We can also encoded the equivalent of the output as a logic constrains $Equal := SEMPNO = SEMPNO \land SENAME = SENAME \land  SDEPTNO \land SDEPTNO$.
+%
+Then we feed the constrains $\neg Equal \land c_1 \land c_0$ , which represents both program reach the return statement and return different vector, 
+into the SMT solver.
+%
+The SMT solver returns \textbf{unsat}, which indicates there is no such input makes two program returns two different vector.
+%
+Combing the proof that if $p_1$ reaches the return statement, then $p_0$ reaches the return statement.
+%
+We prove SQL query $q_0$ contains $q_1$.
+%
+By proving $q_1$ contains $q_0$ by the same approach, we prove $q_0$ is semantically equivalent to $q_1$.
+
+%summary, introduce basic structure of the system
+In short summary, 
+
+

@@ -1,0 +1,8 @@
+\begin{align*}
+  \sql ::=~&\STable{N}\\
+         |~&\SFilter{P}{\sql}\\
+         |~&\SProj{F}{\sql}\\
+         |~&\SJoin{JoinType}{P}{\sql}{\sql}\\
+         |~&\SUnion{\sql}{\sql} \\
+         |~&\SAggregate{Agg}{\vec{Group}}{\sql}\\
+\end{align*}

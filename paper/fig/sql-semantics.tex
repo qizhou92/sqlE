@@ -1,0 +1,75 @@
+\begin{spreadlines}{10pt}
+\begin{gather*}
+  \inference[$\textsc{E-Table}$]{%
+  }{%
+  \evaluation{T}{\STable{N}}{( t | \forall t \in N)}
+  }
+  \\
+  \inference[$\textsc{E-Filter}$]{%
+  \evaluation{T}{q_0}{R}
+  }{%
+    \evaluation{T}{\SFilter{P}{q_0}}{(v| \forall \vec{v} \in R,P(\vec{v}))}
+  }
+  \\
+  \inference[$\textsc{E-Projection}$]{%
+    \evaluation{T}{q_0}{R}
+  }{%
+    \evaluation{T}{\SProj{F}{q_0}}{( F(\vec{v}) | \forall \vec{v} \in R)}
+  }
+  \\
+  \inference[$\textsc{E-InnerJoin}$]{%
+    \evaluation{T}{q_0}{R_0}\\
+    \evaluation{T}{q_1}{R_1}\\
+  }{%
+    \evaluation{T}{\SJoin{Inner}{P}{q_0}{q_1}}{R_3}
+  }
+  \\
+  R_3 :=(concat(\vec{v_0},\vec{v_1}) | \forall \vec{v_0} \in R_0, \forall \vec{v_1} \in R_1, P(\vec{v_0},\vec{v_1}))
+  \\
+  \inference[$\textsc{E-LeftJoin}$]{
+   \evaluation{T}{q_0}{R_0}\\
+   \evaluation{T}{q_1}{R_1}\\
+  }
+  {
+   \evaluation{T}{\SJoin{Inner}{P}{q_0}{q_1}}{R_3 \cup R_4}
+  }
+  \\
+  R_3 :=(concat(\vec{v_0},\vec{v_1}) | \forall \vec{v_0} \in R_0 s.t \forall \vec{v_1} \in R_1, P(\vec{v_0},\vec{v_1})) \\
+  R_4 :=(concat(\vec{v_0},\vec{null}) | \forall \vec{v_0} \in R_0 s.t. \forall \vec{v_1} \in R_1, \neg P(\vec{v_0},\vec{v_1}))
+  \\
+ \inference[$\textsc{E-FullJoin}$]{
+   \evaluation{T}{q_0}{R_0}\\
+   \evaluation{T}{q_1}{R_1}\\
+  }
+  {
+   \evaluation{T}{\SJoin{Inner}{P}{q_0}{q_1}}{R_3 \cup R_4 \cup R_5}
+  }
+  \\
+  R_3 :=(concat(\vec{v_0},\vec{v_1}) | \forall \vec{v_0} \in R_0 s.t \forall \vec{v_1} \in R_1, P(\vec{v_0},\vec{v_1})) \\
+  R_4 :=(concat(\vec{v_0},\vec{null}) | \forall \vec{v_0} \in R_0 s.t. \forall \vec{v_1} \in R_1, \neg P(\vec{v_0},\vec{v_1})) \\
+  R_5 :=(concat(\vec{null},\vec{v_1}) | \forall \vec{v_1} \in R_1 s.t \forall \vec{v_0} \in R_0, P(\vec{v_0},\vec{v_1})) 
+  \\
+  \inference[$\textsc{E-Union}$]{%
+   \evaluation{T}{q_0}{R_0}\\
+   \evaluation{T}{q_1}{R_1}\\
+  }{%
+  \evaluation{T}{\SUnion{q_0}{q_1}}{R_0 \cup R_1}
+  }
+  \\
+  \inference[$\textsc{E-Aggregate}$]{%
+   \evaluation{T}{q_0}{R_0}\\
+  }{%
+  \evaluation{T}{\SAggregate{Agg}{\vec{group}}{q_0}}{R_3}
+  }
+  \\
+  R_3 := (Agg(\vec{g}) | \forall g \in partition(R_0,\vec{group}))
+  %\inference[$\textsc{E-Prod}$]{%
+  %  \evaluation{c_0}{\sigma}{\sigma'}&
+  %  \sigma \cap \tau = \varnothing\\
+  %  \evaluation{c_1}{\tau}{\tau'}&
+  %  \sigma' \cap \tau' = \varnothing\\
+  %}{%
+  %  \evaluation{c_0 \times c_1}{\sigma \cup \tau}{\sigma' \cup \tau'}
+  %}
+\end{gather*}
+\end{spreadlines}
