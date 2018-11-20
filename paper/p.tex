@@ -17,11 +17,13 @@
 \usepackage{booktabs}
 \usepackage{array,underscore,relsize}
 \usepackage[T1]{fontenc}
-% \usepackage{times}
+\usepackage{times}
 \usepackage{fancyhdr,lastpage}
 \usepackage{enumitem}
 % Makes sigplanconf throw warning.
 % \usepackage[labelfont=bf,font=small,skip=5pt]{caption}
+
+%\usepackage{lmodern}
 
 % aliascnt: counter stuff that works with theorem environments.
 \usepackage{aliascnt}
@@ -76,9 +78,20 @@
 
 % abstract.tex: DEP, contains abstract
 \input{introduction}
-\input{formalize}
+
+\AJ{Need to break down approach into three sections similar to UDP paper. Example:
+\begin{enumerate}[noitemsep,nolistsep,label=\protect\BC{\arabic*},leftmargin=7ex]
+\setlength{\itemsep}{-0pt}
+\item Axiomatic Foundations (?)
+\item Aggregates etc.
+\item Decision Procedures (?)
+\end{enumerate}
+}
+
 \input{overview}
 
+\AJ{Problem formalization should come after overview.}
+\input{formalize}
 
 % bibliography:
 %\bibliographystyle{abbrv}

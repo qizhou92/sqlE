@@ -21,3 +21,5 @@
 .latexrun.db
 auto
 pptx/*-crop.pdf
+/tmp/
+/p.synctex.gz
