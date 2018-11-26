@@ -1,15 +1,29 @@
 \documentclass{vldb}
 
+\newcommand{\paperTitle}{Proving Equivalence of SQL Queries Using Satisfiability
+Modulo Theories} 
+\newcommand{\paperKeywords}{Query Rewriting, Query Optimization, Satisfiability
+Modulo Theories}
+\newcommand{\paperAuthors}{}
+
 % Define to fix sigplanconf.
 % \doi{}
 
 \setlength{\paperheight}{11in}
 \setlength{\paperwidth}{8.5in}
 
-% LNCS: creates bib on new page with centered title
 \usepackage[square,comma,numbers,sort&compress]{natbib}
 %\usepackage[hyphens]{url}
-\usepackage[breaklinks,colorlinks]{hyperref}
+\usepackage{hyperref}
+
+% hyperref itself
+\hypersetup{
+ pdfauthor = {\paperAuthors}, 
+ pdftitle = {\paperTitle}, 
+ pdfkeywords = {\paperKeywords}, 
+ pdfborder={ 0 0 0 }
+}
+
 \usepackage[usenames,dvipsnames]{xcolor}
 \usepackage{amsmath,amsopn,amssymb}
 \usepackage{subfig}
@@ -20,7 +34,6 @@
 \usepackage{times}
 \usepackage{fancyhdr,lastpage}
 \usepackage{enumitem}
-% Makes sigplanconf throw warning.
 % \usepackage[labelfont=bf,font=small,skip=5pt]{caption}
 
 %\usepackage{lmodern}
@@ -67,14 +80,40 @@
 \vldbNumber{xxx}
 \vldbYear{2018}
 
-\title{Automatically Proving Semantic Equivalence of SQL Queries}
-\author{Anonymous Author(s)}
+\title{\paperTitle}
+\author{\paperAuthors}
+
 \begin{document}
 
-% hdr: header
-\input{hdr}
-\date{}
 \maketitle
+
+\begin{abstract}
+
+The design of the buffer manager in database management systems (DBMSs)
+is influenced by the performance characteristics of volatile
+memory (DRAM) and non-volatile storage (e.g., SSD).
+The key design assumptions have been that the data must be migrated to DRAM 
+for the DBMS to operate on it and that storage is orders of magnitude slower
+than DRAM. But the arrival of new non-volatile memory (NVM) technologies that
+are nearly as fast as DRAM invalidates these previous assumptions.
+
+This paper presents techniques for managing and designing a multi-tier storage
+hierarchy comprising of DRAM, NVM, and SSD.
+Our main technical contributions are a multi-tier buffer manager and a storage
+system designer that leverage the characteristics of NVM.
+We propose a set of optimizations for maximizing the utility of data migration
+between different devices in the storage hierarchy. 
+We demonstrate that these optimizations have to be tailored based on 
+device and workload characteristics. 
+Given this, we present a technique for adapting these optimizations to achieve a
+near-optimal buffer management policy for an arbitrary workload and storage
+hierarchy without requiring any manual tuning.
+We finally present a recommendation system for designing a multi-tier storage
+hierarchy for a target workload and system cost budget.
+Our results show that the NVM-aware buffer manager and storage system designer
+improve throughput and reduce system cost across different transaction and
+analytical processing workloads.
+\end{abstract}
 
 % abstract.tex: DEP, contains abstract
 \input{introduction}
@@ -94,10 +133,11 @@
 \input{formalize}
 
 % bibliography:
-%\bibliographystyle{abbrv}
+\newcommand{\newblock}{}
+\bibliographystyle{abbrv}
 \small
 
-%\bibliography{p}
+\bibliography{p}
 
 
 \end{document}
