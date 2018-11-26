@@ -1,76 +1,89 @@
 \section{Introduction}\label{sec:introduction}
 % motivation
-\QZ{need to write motivation}
-%
+
+A relational database management system (DBMS) can execute a given query using
+many alternative ways with widely varying evaluation costs. 
+The process of identifying the most efficient plan for executing a query among
+these alternatives is termed as query optimization. 
+The query optimizer contains a collection of rules for rewriting relational
+expressions in a query into alternative, equivalent expressions that can be more
+efficiently computed. Two expressions in relational-algebra are equivalent 
+if they generate the same set of tuples on every possible database instance,
+that satisfies all the integrity constraints specified in the database schema.
+ 
+It is challenging for DBMS developers to ensuring the validity of query
+rewriting rules. Since the general problem of determining the equivalence of two
+expressions is an undecidable problem, developers tend to construct rules
+in an ad-hoc manner. This approach results in incorrect rewrites that introduce
+critical, subtle correctness bugs in DBMSs\todo{~\cite{}}.
 
 % close related work
-In general, deciding whether two given SQL queries are semantically equivalent is an undecidable problem(\QZ{cite}).
-%
+In general, deciding whether two given SQL queries are semantically equivalent
+is an undecidable problem(\QZ{cite}).
 There has been substantial previous work done in this filed.
 % introduce not so related work
-Some of the work has been focussed on how to identify a subset of relational algebra that enables proving that semantical equivalence is decidable 
-under set definition \QZ{cite} or under bag definition \QZ{cite}.
-%
-This type of work focusses on the theoretical analysis of an approach to this problem, which hardly leads to a system that can be applied to real world sql queries.
-%
+Some of the work has been focussed on how to identify a subset of relational
+algebra that enables proving that semantical equivalence is decidable under set
+definition \QZ{cite} or under bag definition \QZ{cite}.
+This type of work focusses on the theoretical analysis of an approach to this
+problem, which hardly leads to a system that can be applied to real world sql
+queries.
 
 % UW works
-Another previous approach is converting SQL queries into a simple algebraic structure, 
-then using a decision procedure to find the isomorphisms and homomorphisms between algebraic expressions to proving equivalence under set or bag definition.
-%
-There have been two systems implemented based on different algebraic structure by this approach.
-%
-One is \textbf{COSETTE} \QZ{cite} that uses \textbf{k-relations} as the algebraic structure to interpret SQL queries.
-%
-The other is \textbf{UDP} \QZ{cite} that uses \textbf{unbounded semiring} to interpret SQL queries.
+Another previous approach is converting SQL queries into a simple algebraic
+structure, then using a decision procedure to find the isomorphisms and
+homomorphisms between algebraic expressions to proving equivalence under set or
+bag definition.
+There have been two systems implemented based on different algebraic structure
+by this approach.
+One is \textbf{COSETTE} \QZ{cite} that uses \textbf{k-relations} as the
+algebraic structure to interpret SQL queries.
+The other is \textbf{UDP} \QZ{cite} that uses \textbf{unbounded semiring} to
+interpret SQL queries.
 % why it is bad
-While these systems have been able to prove equivalence among some pair of sql queries under set or bag definition, it has one significant shortcoming.
-%
-These approaches do not model the semantics of many widely used features in SQL queries, such as arithmetic operations, NULL values, and filter predicates,
+While these systems have been able to prove equivalence among some pair of sql
+queries under set or bag definition, it has one significant shortcoming.
+These approaches do not model the semantics of many widely used features in SQL
+queries, such as arithmetic operations, NULL values, and filter predicates,
 which limits the usage of such approach in real world queries.
-%
 
 % contribution
-The first contribution of this paper is proposing to use SMT solver, which is a widely used technique in programming verification community, 
-to decide the semantically equivalence of sql queries under \textbf{set} definition.
-%
-This approach views each SQL query as a loop-free and guaranteed terminated program. 
-%
-This approach allows us to use logic constrains to encode the semantic of large subset of SQL features,
-including filter operation with all common used predicate, extended projection with complex arithmetic operations, three different type of join operation, union operation, aggregate
-operation and NULL values.
-%
-Because this problem is undecidable, this approach uses over-approximation to be sound but incomplete.
-%
+The first contribution of this paper is proposing to use SMT solver, which is a
+widely used technique in programming verification community, to decide the
+semantically equivalence of sql queries under \textbf{set} definition.
+This approach views each SQL query as a loop-free and guaranteed terminated
+program.
+This approach allows us to use logic constrains to encode the semantic of large
+subset of SQL features, including filter operation with all common used
+predicate, extended projection with complex arithmetic operations, three
+different type of join operation, union operation, aggregate operation and NULL
+values.
+Because this problem is undecidable, this approach uses over-approximation to be
+sound but incomplete.
 
-The second contribution is an implemented tool \sys that can automatically decide the equivalence of sql queries under set definition.
-%
-Because deciding the semantical equivalence of a given pair of SQL queries is an undecidable problem, \sys is sound but incomplete.
-%
-Sound implies if \sys gives an equivalent decision, the given pair of SQL queries are semantically equivalent.
-%
-By Incomplete we mean that if \sys gives an inequivalent decision, the given pair of SQL queries might be indeed semantically equivalent. In other words, our system \sys may result in some false negatives.
-%
+The second contribution is an implemented tool \sys that can automatically
+decide the equivalence of sql queries under set definition.
+Because deciding the semantical equivalence of a given pair of SQL queries is an
+undecidable problem, \sys is sound but incomplete.
+Sound implies if \sys gives an equivalent decision, the given pair of SQL
+queries are semantically equivalent.
+By Incomplete we mean that if \sys gives an inequivalent decision, the given
+pair of SQL queries might be indeed semantically equivalent. In other words, our
+system \sys may result in some false negatives.
 We apply \sys to an open benchmark set from calcite\QZ{cite}.
-%
-The evaluation result shows that \sys can prove semantical equivalence for more pairs of sql queries than \textbf{UDP} under set definition.
-%
+The evaluation result shows that \sys can prove semantical equivalence for more
+pairs of sql queries than \textbf{UDP} under set definition.
 We also apply \sys to a large query dataset.
-%
-The result shows that there are over 10 percent real word queries currently in use at a reputed company xxxxx that contains at least one subquery is semantically equivalent or be contained by other queries'
-subquery, which indicates a big opportunity for optimization.
+The result shows that there are over 10 percent real word queries currently in
+use at a reputed company xxxxx that contains at least one subquery is
+semantically equivalent or be contained by other queries' subquery, which
+indicates a big opportunity for optimization.
 
 % Paper outline.
 The rest of this paper is organized as follows.
 \autoref{sec:formalize} formally defines the target SQL query and the problem.
-%
 \autoref{sec:overview} use a simple example to demonstrate the whole system.
-%
 and \autoref{sec:approach} presents the \sys in details.
-%
 \autoref{sec:evaluation} presents an empirical evaluation of \sys.
-%
-\autoref{sec:related-work} compares our contributions to related work,
-and
-%
+\autoref{sec:related-work} compares our contributions to related work, and
 \autoref{sec:conclusion} concludes.
