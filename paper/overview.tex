@@ -1,23 +1,25 @@
 \section{Overview}\label{sec:overview}
 %
-In this section, we demonstrate our approach by an example.
+In this section, we demonstrate our approach by two examples.
 %
-We first introduce a pair of SQL queries, their corresponding normalized representation and the table schema.
+We first introduce two pairs of semantically equivalent SQL queries and the table schema from the open database
+framework calcite\QZ{cite}.
 %
-Then we illustrate how to prove their semantic equivalence by our system.
+Then we show the fundamental reasons that the previous approach cannot prove their equivalence.
 %
-Finally, we introduce a key technique SMT (Satisfiability Modulo Theory) solver that our system is based on.
-
+Finally, we demonstrate how our approach applies Satisfiability Modulo Theory (SMT) solver to prove the equivalence 
+of these two examples. 
 %
 \begin{figure}
 \input{code/q1.sql}
 \caption{%
-    A pair of sql query from calcite.
+    A pair of sql queries from calcite.
   }\label{fig:q1}
 \end{figure}
 %
 
-\autoref{fig:q1} contains a pair of SQL queries, their corresponding normalized representation and the table schema.
+%introduce the first query
+\autoref{fig:q1} contains a pair of SQL queries and its table schema.
 %
 $EMP$ is a table that has three columns $EMPNO$, $ENAME$ and $DEPTNO$.
 %
@@ -33,82 +35,218 @@ ten and calls the result as $t1$.
 %
 Then $q_1$ selects all tuples from $t1$ such that $EMPNO$ is less than 15.
 %
-These two sql queries are obviously semantically equivalent 
-because once the $DEPTNO$ is equal to ten, $DEPTNO$ plus five is equal to 15.
-%
-In order to prove the semantic equivalence of $q_0$ and $q_1$, we convert $q_0$ and 
-$q_1$ into the syntax we defined in \autoref{sec:formalize}.
-%
-The relation, that returns by executing $q_0$ on a valid input $T$, is denoted as $R_0$.
-%
-The relation that returns by executing $q_1$ is denoted as $R_1$.
-%
-In this example, because the only related table is $EMP$, the valid input $T$ is the table $EMP$ with a
-finite number of tuples.
-
-%
-Based on the definition of equivalence in \autoref{sec:formalize}, in order to prove $q_0$ is semantically
-equivalent to $q_1$, we need to prove $q_0$ contains $q_1$ and $q_1$ contains $q_0$.
-%
-We use $q_0$ contains $q_1$ as an example to demonstrate how to verify containment of sql queries.
-%
-Based on the definition of containment in \autoref{sec:formalize}, in order to prove $q_0$ contains 
-$q_1$, we need to prove for all valid inputs $T$, all vectors, that are $R_1$, are also in $R_0$. 
-%
-In other words, we need to prove for all valid input, there is no vector that in $R_1$ is not in $R_0$.
+These two sql queries are obviously semantic equivalent 
+because once the $DEPTNO$ is equal to ten, $DEPTNO$ plus five equals to 15.
 %
 
-% the intuition of the design
-If we consider all vectors in $R_0$ and $R_1$, each of them is actually directly from a tuple in the input table $EMP$
-because of the semantic of filter operation.
-%
-Furthermore, if we only consider sql query that contains table, filter, project and inner join operation, 
-then each vector in the final relation is constructed by choosing one tuple
-from each table as long as the query does not contain a table with duplicate tuples.
-%
-A query that contains duplicate tuples will be considered later in \QZ{section}.
-%
-Thus this type of query can be viewed as a multiple execution of a program that takes one vector
-from each table that either constructs a new vector in the final relation, or does not return any vector.
-%
-In this example, $q_0$ and $q_1$ can be viewed as multiple execution of the program $p_0$ and $p_1$ that is shown in \autoref{fig:q2}
+
+%introduce the second query
 %
 \begin{figure}
-\input{code/q2.java}
+\input{code/q2.sql}
 \caption{%
-    programs that construct vector.
+    A pair of sql queries from calcite.
   }\label{fig:q2}
 \end{figure}
 %
-$p_0$ and $p_1$ takes a vector from the input table $EMP$ and outputs a vector if it satisfies certain conditions.
+\autoref{fig:q2} contains a pair of SQL queries with the same table schema as above.
 %
-If we can prove the following statement for any given input, which is a vector of table $EMP$, then we prove that $q_0$ contains $q_1$.
+The query $q_0$ selects all tuples from table $EMP$ such that $EMPNO$ equals to 10, and
+$EMPNO$ is not NULL.
 %
-The statement is for the same input, if program $p_1$ returns a vector, then program $p_0$ returns the same vector.
+The query $q_1$ selects all tuples from table $EMP$ such that $EMPNO$ equals to 10.
 %
-Proving such statement needs two steps.
+These two sql queries are semantically equivalent. 
 %
-First we need to prove for an arbitrary input vector $EMPNO,ENAME,DEPTNO$, if $p_1$ reaches the return statement, which means this vector is not 
-eliminated by the filter operation of $q_1$, then $p_0$ also reaches the return statement.
+Because based on three value logic, if $EMPNO$ equals to 10 be evaluated as true, then 
+$EMPNO$ is not NULL.  
+
+%talk about the previous approach
+Previous approaches such as Cosette\QZ{cite} and Udp\QZ{cite} fails to prove the semantic
+equivalence of these two pairs of queries.
 %
-Then we need to prove for an arbitrary input vector that $p_1$ and $p_0$ both reach the return statement, and also that $p_1$ and $p_0$ returns the same vector.
+Cosette and Udp use K-relations and U-semiring respectively as a simple algebra structure for
+representing sql queries.
 %
-This statement holds trivially for this example, because both sql queries directly return the input vector.
+After sql queries being translated into nominalized form in a simple algebra strcutre, then Cosette and
+Udp applies a set of rewrite rules on algebra expression.
 %
-But for queries that contain project operation, we need to verify the output vectors are the same by two queries.
+If an isomorphism can be found between two rewrited algebra expressions, then the two sql queries are equivalent.
+
+%Why it fails for the first example
+For proving the equivalence of the pair of queries in \autoref{fig:q1}, two queries can be 
+represented as the following algebra representation.
+%
+\[q1 : \lbrack t.DEPTNO = 10 \rbrack \times \lbrack t.DEPTNO + 5 > t.EMPNO \rbrack \times EMP(t)\]
+%
+\[q2:  \lbrack t.DEPTNO = 10 \rbrack \times \lbrack 15 > t.EMPNO \rbrack \times EMP(t)] \]
+%
+The previous approaches cannot prove these two queries are equivalent.
+%
+Because this proof requires modeling the semantic of arithmetic operations and combining the semantic of
+each predicate.
+%
+The automatic proof system needs to be able to infer the fact that the predicate 
+$\lbrack t.DEPTNO + 5 > t.EMPNO \rbrack$ and predicate $\lbrack 15 > t.EMPNO$ are identical if the predicate
+$\lbrack t.DEPTNO = 10 \rbrack$ holds.
+
+
+%Why it fails for the second example
+For proving the equivalence of the pair of queries in \autoref{fig:q2}, two queries can be 
+represented as the following algebra representation.
+%
+\[q1 : \lbrack t.DEPTNO = 10 \rbrack \times \lbrack NOT\_NULL(t.DEPTNO) \rbrack \times EMP(t)\]
+%
+\[q2:  \lbrack t.DEPTNO = 10 \rbrack \times EMP(t)] \]
+%
+The previous approaches cannot prove these two queries are equivalent.
+%
+Because this proof requires modeling the three logic system for null value, modeling the semantic of 
+equal predicates and combining the semantic of each predicate.
+%
+The automatic proof system needs to be able to infer that if $\lbrack t.DEPTNO = 10 \rbrack$ holds, 
+then $t.DEPTNO$ cannot be an NULl value.
+%
+The fact needs to be inferred is non-trivial.
+%
+Because for some binary predicates, the column can be NULL when the predicate be evaluated as
+true.
+%
+For example, predicate $\lbrack OR TRUE t.DEPTNO \rbrack$ holds in three logic system when $t.DEPTNO$ is NULL.
+
+% key reasons why it fails
+There are two main reasons that the approaches of translating SQL queries into simple algebra expressions 
+and deciding the equivalence by applying re-write rule to find isomorphism are limited.
+%
+First, as the above example, each predicate has certain sematically meaning that would affect other predicates.
+%
+These approaches unable to modeling the semantic meaning of all predicates and combining these semantic of these
+predicates.
+%
+Second, not only predicates, but also some operator has certain semantically would affect other predicates.
+%
+For example, for the left outer join, when the tuples in left table fails to find the matching tuples 
+in the right tuples, the new tuples is concatenation of left tuple with null values.
+%
+If $NOT\_NULL$ predicates be applied to the new tuples, it eliminates all tuples that columns from 
+right table are null. 
+%
+The left outer join actually be reduced to inner join when certain predicates applied.
+
+
+%
+In order to prove the semantic equivalence of queries in \autoref{fig:q1} and \autoref{fig:q2}.
+%
+We proposed use satisfiability modulo theories(SMT) solver, which is 
+a widely accepted technique in program verification problems, to verifying the equivalence between SQL queries.
+%
+
+We prove the semantic equivalence of SQL queries under \textbf{set} definition.
+%
+It means two SQL queries are be considered semantic equivalent if and only if for all valid input tables, 
+the output tables are the same of applying these two queries on the same input tables and eliminating all duplicates
+tuples in the output tables.
+%
+We choose the semanticaly equivalence under the \textbf{set} definition becuase \QZ{related to motivation}.
+%
+We prove the equivalence between two queries by proving two containment relations that each query contains the other.
+%
+We define containment relations under set definition as query $q_1$ contains query $q_2$ if and only if
+for all valid input tables, the tuples in the output table of applying $q_2$ on input tables all shows in
+the output table of applying $q_1$ on the same input tables.
+%
+In other words, if there is no tuple in the output table of $q_2$ that not int output table of $q_1$ for the same
+valid inputs, then $q_1$ contains $q_2$.
+%
+The formation definitions of containment and equivalent are given in \autoref{sec:formalize}.
+
+%
+We have reduced the problem of verifying the equivalence of sql queries to verify the containment relations of sql
+queries.
+%
+We use pairs of queries in \autoref{fig:q1} and \autoref{fig:q2} as examples to demonstrate how to verify 
+containment relations of sql queries.
+%
+
+% the intuition of the design
+The key observation for queries in \autoref{fig:q1} and \autoref{fig:q2} is that each tuple in the output table is
+corresponding a tuple in the original input table $EMP$.
+%
+The semantic of these queries is filtering out tuples in table $EMP$ that does not satisfy a set of predicates.
+%
+Furthermore, if we only consider sql query that contains table, filter, project and inner join operation, 
+then each tuples in the output table is constructed by choosing one tuple
+from each input table.
+%
+This type of queries can be viewed as applying a program, that takes one tuple
+from each input table that returns a new tuple in the output table if certain predicates are satisfied, on the 
+cartesian product of all input tables.
+%
+Queries that contains left outer join, full outer join, union and aggregate will be discussed in \QZ{section}.
+
+%
+In this example, $q_1$ and $q_2$ in \autoref{fig:q1} can be viewed as multiple execution of the program 
+$p_0$ and $p_1$ that is shown in \autoref{fig:p1}
+%
+\begin{figure}
+\input{code/p1.java}
+\caption{%
+    programs that represent queries.
+  }\label{fig:p1}
+\end{figure}
+%
+$p_1$ and $p_2$ takes a tuple from the input table $EMP$ and outputs a tuple if it satisfies certain conditions.
+%
+We can prove query $q_1$ contains $q_2$ by proving following statement:
+For a given input which is a tuple from $EMP$, if program $p_2$ returns a tuple, 
+then $p_1$ returns the same tuple.
+
+%
+Proving this statement needs two steps.
+%
+First we need to prove for an arbitrary input tuple $EMPNO,ENAME,DEPTNO$, if program $p_2$ 
+reaches the return statement, then program $p_1$ also reaches the return statement.
+%
+Then we need to prove for an arbitrary input tuple that program $p_1$ and $p_2$ both reach the return statement, 
+program $p_1$ and $p_0$ returns the same tuple.
+%
+This condition holds trivially for this example, because both sql queries directly return the input tuple.
+%
+But for queries that contain projection, this condition needs to be verified.
 
 %how to do it.
-The key here is that program $p_0$ and $p_1$ are loop-free due to the nature of SQL queries and are guaranteed to terminate.
+The key here is that program $p_0$ and $p_1$ are loop-free and guaranteed terminated program due to the nature of
+SQL queries.
 %
-Verifying this property for loop-free and guaranteed terminated programs is a well-studied problem in program language community.
+Verifying relational properties for loop-free and guaranteed terminated programs is 
+a well-studied problem in program language community.
 %
-Using satisfiability modulo theories(SMT) solver is a widely accepted technique in program verification problems.
+Using satisfiability modulo theories(SMT) solver is a widely accepted technique for loop-free and guaranteed
+terminated programs' verification problems.
 %
-We translate queries into logic constrains, and use SMT solver to decide if these constrains are satisfiable to judge if one query contains
-the other.
+
+%Explain SMT
+Satisfiability modulo theories solver is a tool that decides if a given first order logic formula has an
+interpretation for the variables that satisfy the formula.
+%
+If the formula is satisfiable, then the solver returns a model of variables that satisfy this formula.
+%
+For example, given the formula $x>0 /\ x < 5$, the SMT solver returns $SAT$, which means this formula is 
+\textbf{satisfiable}.
+%
+Because $x$ can be $1$, and $1$ is greater then 0 and less than 5.
+%
+Given the formula $x > 10 /\ x < 5$, then SMT solver returns $UNSAT$, which means this formula is 
+\textbf{unsatisfiable}.
+%
+Because there is no value for $x$ that can satisfy this formula.
+%
+For verifying the program properties, programs and properties are encoded as logic constrains, and using SMT
+solver to check the satisfiability of the logic constrains to decides if the properties holds for the programs.
 
 %
-In this example, because the input is a vector of three elements, we create three variables $SEMPNO$,$SENAME$ and $SDEPTNO$ in the logic constrains that each 
+In this example, because the input is a vector of three elements, we create three variables $SEMPNO$,$SENAME$ and 
+$SDEPTNO$ in the logic constrains that each 
 corresponding an element in the input vector.
 %
 The condition of program $p_0$ reaches the return statement can be encoded into an first order logic constrains \\
@@ -128,25 +266,26 @@ The SMT solver returns \textbf{unsat}, which means this logical constrains is un
 It indicates there is no such input that satisfies $c_1$ and does not satisfy $c_0$.
 
 %
-In the second step, we need to prove for the same input, if both program $p_0$ and $p_1$ reach the return statement, then they return the same vector.
+In the second step, we need to prove for the same input, if both program $p_0$ and $p_1$ reach the return statement,
+then they return the same vector.
 %
 In the other words, we need to prove that there is no input, such that $p_0$ and $p_1$ return different vectors.
 %
 Because $p_0$ and $p_1$ both directly return the input vector, this statement holds trivially.
 %
-We can also encoded the equivalent of the output as a logic constrains $Equal := SEMPNO = SEMPNO \land SENAME = SENAME \land  SDEPTNO \land SDEPTNO$.
+We can also encode the equivalent of the output as a logic constrains $Equal := SEMPNO = SEMPNO \land SENAME = 
+SENAME \land  SDEPTNO \land SDEPTNO$.
 %
-Then we feed the constrains $\neg Equal \land c_1 \land c_0$ , which represent both programs reach the return statement and return different vector, 
+Then we feed the constrains $\neg Equal \land c_1 \land c_0$ , which represent both programs reach the return 
+statement and return different vector, 
 into the SMT solver.
 %
-The SMT solver returns \textbf{unsat}, which indicates there is no such input for which the two programs return two different vectors.
+The SMT solver returns \textbf{unsat}, which indicates there is no such input for which the two programs return two 
+different vectors.
 %
 Combing the proof that if $p_1$ reaches the return statement, then $p_0$ reaches the return statement.
 %
 We prove SQL query $q_0$ contains $q_1$.
 %
 By proving $q_1$ contains $q_0$ by the same approach, we prove $q_0$ is semantically equivalent to $q_1$.
-
-%summary, introduce basic structure of the system
-In short summary, 
 
