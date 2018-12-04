@@ -1,30 +1,26 @@
 \section{Introduction}\label{sec:introduction}
 % motivation
 
-Database management systems (DBMSs) can execute a given SQL query using many
-alternative ways with widely varying evaluation costs.
-The process of identifying the most efficient plan for executing a query among
-these alternatives is termed as query optimization~\cite{ramakrishnan02}. 
-The query optimizer contains a collection of rules for rewriting relational
-expressions in a query into alternative, equivalent expressions that can be more
-efficiently computed. These expressions must generate the same set of tuples on
-every possible database instance.
+The proliferation of cloud computing has resulted in the availability of
+a growing number of database-as-a-service (DBaaS) offerings (e.g., 
+Microsoft's Azure Data Lake, Google's BigQuery). 
+These DBaaS solutions allow end users to examine data through on-demand
+services, without the need to first install any hardware or software on their
+machines. They offer multiple benefits over traditional on-prem DBMSs,  
+including lower software licensing and infrastructure costs, 
+rapid provisioning, 
+reduced infrastructure management overhead, 
+ability to elastically scale resources to meet demand, and 
+higher availability.
 
-It is challenging for DBMS developers to ensure the validity of the rules for
-rewriting relational expressions in the query optimizer. We attribute this to
-the lack of automated techniques to validate rules. It is not possible to
-develop a tool that solves the general problem of determining the equivalence of 
-two expressions, since it has been proved to be undecidable.
-Developers circumvent this problem by constructing rules in an ad-hoc manner.
-This approach results in incorrect rules that manifest as critical, subtle
-correctness bugs in DBMSs~\cite{ganski87}.
-
-The severity of this problem will likely increase with the proliferation of 
-data processing systems (e.g., CockroachDB, MemSQL, Spark SQL, Hive). 
-The query optimizers in these systems are designed by development teams that
-might lack the dedicated resources for manually checking each rule in the
-system. For example, the Calcite query processing engine contains more than 232
-rewrite rules that have not been formally validated.
+DBaaS solutions have enabled users to quickly create and deploy complex data
+processing tasks. Prior work has shown that these tasks may have significant
+computation overlap resulting in redundant execution of the certain sub-tasks.
+For example, almost 40\% of the daily tasks on  Microsoft's SCOPE service 
+have computation overlap with other tasks. 
+This increases resource consumption and data processing costs.
+It is challenging for developers and database administrators to manually  
+detect overlap across different tasks.
 
 % close related work
 In general, deciding whether two given SQL queries are semantically equivalent
