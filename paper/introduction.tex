@@ -13,44 +13,51 @@ reduced infrastructure management overhead,
 ability to elastically scale resources to meet demand, and 
 higher availability.
 
-DBaaS solutions have enabled users to quickly create and deploy complex data
+DBaaS solutions enable end users to quickly create and deploy complex data
 processing tasks. Prior work has shown that these tasks may have significant
-computation overlap resulting in redundant execution of the certain sub-tasks.
-For example, almost 40\% of the daily tasks on  Microsoft's SCOPE service 
-have computation overlap with other tasks. 
-This increases resource consumption and data processing costs.
-It is challenging for developers and database administrators to manually  
-detect overlap across different tasks.
+overlap of computation (i.e., redundant execution of certain sub-tasks).
+For example, around 40\% of the tasks executed on Microsoft's SCOPE 
+service have computation overlap with other tasks. This results in 
+increased consumption of computational resources, higher data processing costs,
+and longer task execution times. 
 
-% close related work
-In general, deciding whether two given SQL queries are semantically equivalent
-is an undecidable problem(\QZ{cite}).
-There has been substantial previous work done in this filed.
-% introduce not so related work
-Some of the work has been focussed on how to identify a subset of relational
-algebra that enables proving that semantical equivalence is decidable under set
-definition \QZ{cite} or under bag definition \QZ{cite}.
-This type of work focusses on the theoretical analysis of an approach to this
-problem, which hardly leads to a system that can be applied to real world sql
-queries.
+Developers and database administrators may resolve these problems by increasing
+the modularity of their data processing tasks to reuse of the results of
+frequently executed sub-tasks (i.e., queries). 
+However, in practice, it is challenging for developers and database
+administrators (DBAs) to manually detect overlap across tasks since they 
+may be distributed across teams, organization roles,  and geographic locations.
+Thus, we require automated cloud-scale tools for identifying 
+semantically equivalent queries.
 
-% UW works
-Another previous approach is converting SQL queries into a simple algebraic
-structure, then using a decision procedure to find the isomorphisms and
-homomorphisms between algebraic expressions to proving equivalence under set or
-bag definition.
-There have been two systems implemented based on different algebraic structure
-by this approach.
-One is \textbf{COSETTE} \QZ{cite} that uses \textbf{k-relations} as the
-algebraic structure to interpret SQL queries.
-The other is \textbf{UDP} \QZ{cite} that uses \textbf{unbounded semiring} to
-interpret SQL queries.
+The fundamental problem of determining if two SQL queries are semantically
+equivalent or not is undecidable~\cite{abiteboul95}.
+Given this constraint, researchers have focused on identifying a subset of
+relational algebra where it is feasible to determine equivalence of queries
+under set and bag semantics\footnote{define}\AJ{citations}. This line of
+research examined the theoretical underpinnings of this problem by targeting
+conjunctive queries. This limits their ability to identify overlap in 
+real-world SQL queries.
+
+A more pragmatic approach to query equivalence has been proposed by the 
+recently developed \textbf{COSETTE} and \textbf{UDP} tools.
+They transform SQL queries to an algebraic structure and use a decision
+procedure to compare the resulting algebraic expressions.
+These tools determine query equivalence by finding isomorphisms and
+homomorphisms between the algebraic expressions under the set or bag
+definitions.
+\textbf{COSETTE} and \textbf{UDP} \QZ{cite} uses different algebraic structures
+for transforming SQL queries. While the former tool uses \textbf{k-relations},
+the latter leverages \textbf{unbounded semiring}\AJ{Why different structures}.
+
 % why it is bad
-While these systems have been able to prove equivalence among some pair of sql
-queries under set and bag definition, it has one significant shortcoming.
-These approaches do not model the semantics of many widely used features in SQL
-queries, such as arithmetic operations, NULL values, and complicated filter predicates,
-which limits the usage of such approach in real world queries.
+While these tools have been able to prove equivalence of real-world SQL queries,
+they suffer from two limitations.
+First, they cannot model the semantics of many widely-used aspects of SQL
+queries including arithmetic operations, NULL values, and complex query
+predicates. This restricts their usability on complex real-world queries.
+Second, their decision procedures are computationally intensive and
+may not be suitable for analysing cloud-scale workloads.
 
 % contribution
 The first contribution of this paper is proposing to use SMT solver, which is a
